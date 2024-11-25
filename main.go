@@ -14,15 +14,17 @@ import (
 
 func main() {
 
-	database.Connect()
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	postgres_url := os.Getenv("POSTGRES_URL")
+	database.Connect(postgres_url)
 	// auto migrate the user models at start.
 	if err := database.DB.AutoMigrate(&models.User{}); err != nil {
 		log.Fatal("Failed to migrate database", err)
 	}
 	log.Printf("DB Migration complete")
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3001"

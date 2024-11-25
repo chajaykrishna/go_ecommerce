@@ -1,23 +1,36 @@
 package controllers
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/chajaykrishna/go-ecommerce/database"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 )
 
-type SignupRequest struct {
+type User struct {
 	Username string `json:"username" validate:"required,min=3,alphanum"`
 	Name     string `json:"name" validate:"required,min=2"`
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
+	Password string `json:"password" validate:"required,min=8,max=72"`
+	Phone    string `json:"phone" validate:"omitempty,e164"`
+	Address  string `json:"address" validate:"omitempty,min=3"`
+}
+
+type UserResponse struct {
+	Username string `json:"username" validate:"required,min=3,alphanum"`
+	Name     string `json:"name" validate:"required,min=2"`
+	Email    string `json:"email" validate:"required,email"`
+	Phone    string `json:"phone"`
 }
 
 var validate = validator.New()
 
 func Signup(c *fiber.Ctx) error {
 
-	var request SignupRequest
+	var request User
 	if err := c.BodyParser(&request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Invalid request format",
@@ -31,6 +44,24 @@ func Signup(c *fiber.Ctx) error {
 			"errors":  err.Error(),
 		})
 	}
+	// normalize data
+	request.Email = strings.ToLower(strings.TrimSpace(request.Email))
+	request.Name = strings.TrimSpace(request.Name)
+	request.Username = strings.ToLower(strings.TrimSpace(request.Username))
+
+	// check if the username, phone, email already exist
+	var existingUser User
+	if err := database.DB.Where("email=? OR username=? OR phone=?",
+		request.Email, request.Username, request.Phone).First(&existingUser).Error; err == nil {
+		return sendErrorResponse(c, fiber.StatusConflict, errors.New("User with username/mail/phone already exist"))
+	}
+
+	// Hash password before storing in DB
+	hashedPassword, err := hashPassword(request.Password)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, errors.New("error processing the registration"))
+	}
+	request.Password = hashedPassword
 
 	if err := database.DB.Create(&request).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -43,4 +74,22 @@ func Signup(c *fiber.Ctx) error {
 		"message": "user signup successful",
 		"user":    request,
 	})
+}
+
+// internal functions
+func sendErrorResponse(c *fiber.Ctx, statuscode int, err error) error {
+	return c.Status(statuscode).JSON(fiber.Map{
+		"success": false,
+		"error": fiber.Map{
+			"message": "error",
+			"error":   err.Error(),
+		},
+	})
+}
+
+func hashPassword(password string) (string, error) {
+	hashBytes, err := bcrypt.GenerateFromPassword(
+		[]byte(password), bcrypt.DefaultCost)
+	return string(hashBytes), err
+
 }

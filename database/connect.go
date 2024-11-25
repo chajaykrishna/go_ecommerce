@@ -9,8 +9,8 @@ import (
 
 var DB *gorm.DB
 
-func Connect() error {
-	dsn := `host=localhost user=postgres password=password dbname=stocksdb port=5432 sslmode=disable`
+func Connect(postgres_url string) error {
+	dsn := postgres_url
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to Connect to database: ", err)
