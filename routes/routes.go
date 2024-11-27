@@ -9,6 +9,8 @@ func RegisterRoutes(app *fiber.App) {
 
 	app.Post("api/v1/signup", controllers.Signup)
 
+	app.Get("api/v1/validateUsername/:username", controllers.ValidateUsername)
+
 	// app.Get("api/v1/login", middleware.)
 
 	app.Get("/", func(c *fiber.Ctx) error {

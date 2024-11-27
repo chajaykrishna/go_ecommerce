@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/chajaykrishna/go-ecommerce/database"
+	"github.com/chajaykrishna/go-ecommerce/models"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -73,6 +74,24 @@ func Signup(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "user signup successful",
 		"user":    request,
+	})
+}
+
+func ValidateUsername(c *fiber.Ctx) error {
+	username := c.Params("username")
+
+	var userCount int64
+	if err := database.DB.Model(&models.User{}).Where("username=?", username).Count(&userCount).Error; err != nil {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, errors.New("internal error"))
+	}
+	if userCount > 0 {
+		return sendErrorResponse(c, fiber.StatusConflict, errors.New("username already taken"))
+	}
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"message": "Username available",
+		},
 	})
 }
 
