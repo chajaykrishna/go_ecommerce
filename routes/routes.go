@@ -11,7 +11,7 @@ func RegisterRoutes(app *fiber.App) {
 
 	app.Get("api/v1/validateUsername/:username", controllers.ValidateUsername)
 
-	// app.Get("api/v1/login", middleware.)
+	app.Get("api/v1/login", controllers.Login)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello World!")

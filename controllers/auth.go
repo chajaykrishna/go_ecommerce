@@ -6,6 +6,7 @@ import (
 
 	"github.com/chajaykrishna/go-ecommerce/database"
 	"github.com/chajaykrishna/go-ecommerce/models"
+	"github.com/chajaykrishna/go-ecommerce/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -93,6 +94,37 @@ func ValidateUsername(c *fiber.Ctx) error {
 			"message": "Username available",
 		},
 	})
+}
+
+func Login(c *fiber.Ctx) error {
+	var userRequest types.UserSigninRquest
+	if err := c.BodyParser(&userRequest); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadGateway, errors.New("invalid request body format"))
+	}
+
+	// validate the user body
+	if err := validate.Struct(&userRequest); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, errors.New("invalid request data"))
+	}
+
+	var user models.User
+	if err := database.DB.Where("email=?", userRequest.Email).First(&user).Error; err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, errors.New("invalid credentials"))
+	}
+
+	// validate user given password with actual password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userRequest.Password)); err != nil {
+		return sendErrorResponse(c, fiber.StatusUnauthorized, errors.New("invalid credentials"))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"message": "user login successful",
+			"user":    user,
+		},
+	})
+
 }
 
 // internal functions
