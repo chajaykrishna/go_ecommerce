@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/chajaykrishna/go-ecommerce/database"
+	"github.com/chajaykrishna/go-ecommerce/middlewares"
 	"github.com/chajaykrishna/go-ecommerce/models"
 	"github.com/chajaykrishna/go-ecommerce/types"
 	"github.com/go-playground/validator/v10"
@@ -74,7 +75,6 @@ func Signup(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "user signup successful",
-		"user":    request,
 	})
 }
 
@@ -117,11 +117,24 @@ func Login(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusUnauthorized, errors.New("invalid credentials"))
 	}
 
+	userResponse := types.UserResponse{
+		Username: user.Username,
+		Name:     user.Name,
+		Email:    user.Email,
+		Phone:    user.Phone,
+	}
+
+	accessToken, err := middlewares.GenerateJwtToken(&user)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, errors.New("internal error"))
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"data": fiber.Map{
 			"message": "user login successful",
-			"user":    user,
+			"user":    userResponse,
+			"token":   accessToken,
 		},
 	})
 
