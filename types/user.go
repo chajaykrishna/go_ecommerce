@@ -13,3 +13,10 @@ type UserSignupRequest struct {
 	Phone    string `json:"phone" validate:"omitempty,e164"`
 	Address  string `json:"address" validate:"omitempty,min=3"`
 }
+
+type UserResponse struct {
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+}
