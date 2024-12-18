@@ -1,1 +1,1 @@
-Go Fiber boilerplate code for basic ecommerce apis.
+Go Fiber boilerplate code for basic e-commerce APIs.
